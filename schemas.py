@@ -12,37 +12,70 @@ Model name is converted to lowercase for the collection name:
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
+from datetime import date
 
-# Example schemas (replace with your own):
+# Fitness app schemas
 
+class Exercise(BaseModel):
+    """
+    Exercise library schema
+    Collection name: "exercise"
+    """
+    name: str = Field(..., description="Exercise name, e.g., Bench Press")
+    muscle_group: Optional[str] = Field(None, description="Primary muscle group")
+    equipment: Optional[str] = Field(None, description="Equipment needed")
+    notes: Optional[str] = Field(None, description="Form tips or notes")
+
+class WorkoutItem(BaseModel):
+    exercise_id: Optional[str] = Field(None, description="Linked exercise id (string)")
+    exercise_name: str = Field(..., description="Exercise display name")
+    sets: int = Field(..., ge=1, le=20, description="Number of sets")
+    reps: int = Field(..., ge=1, le=100, description="Target reps per set")
+    rest_seconds: Optional[int] = Field(90, ge=0, le=600, description="Rest time between sets")
+
+class Workout(BaseModel):
+    """
+    Workout templates schema
+    Collection name: "workout"
+    """
+    title: str = Field(..., description="Workout title, e.g., Push Day")
+    description: Optional[str] = Field(None, description="Short description")
+    items: List[WorkoutItem] = Field(default_factory=list, description="Ordered list of exercises in the workout")
+
+class PerformedSet(BaseModel):
+    set_number: int = Field(..., ge=1)
+    weight: Optional[float] = Field(None, ge=0)
+    reps: int = Field(..., ge=1)
+    rpe: Optional[float] = Field(None, ge=1, le=10)
+
+class SessionItem(BaseModel):
+    exercise_name: str
+    target_sets: int
+    target_reps: int
+    performed_sets: List[PerformedSet] = Field(default_factory=list)
+
+class WorkoutSession(BaseModel):
+    """
+    Logged workout session
+    Collection name: "workoutsession"
+    """
+    date_str: str = Field(..., description="ISO date string YYYY-MM-DD")
+    workout_title: str
+    notes: Optional[str] = None
+    items: List[SessionItem] = Field(default_factory=list)
+
+# Example schemas kept for reference (not used by app directly)
 class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    name: str
+    email: str
+    address: str
+    age: Optional[int] = None
+    is_active: bool = True
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    title: str
+    description: Optional[str] = None
+    price: float
+    category: str
+    in_stock: bool = True
